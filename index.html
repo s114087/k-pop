@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>偶像團體精準適配測驗</title>
+<style>
+body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:0;}
+.container { max-width:900px; margin:20px auto; background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
+h1 { text-align:center; color:#333; }
+.question { margin-bottom:20px; }
+.question h3 { margin-bottom:10px; }
+.options button { margin:5px 0; width:100%; padding:10px; border:none; border-radius:5px; cursor:pointer; background:#eee; transition:0.2s; text-align:left;}
+.options button:hover { background:#ddd; }
+#submitBtn { background:#4CAF50; color:white; font-weight:bold; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; font-size:16px; width:100%; }
+#result { display:none; margin-top:20px; text-align:center; }
+iframe { margin-top:10px; width:100%; height:400px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>偶像團體精準適配測驗</h1>
+<form id="quizForm">
+<div id="quizContent"></div>
+<button type="button" id="submitBtn">完成測驗</button>
+</form>
+<div id="result">
+<h2>你的適配團體是：</h2>
+<p id="groupName"></p>
+<p id="groupReason"></p>
+<iframe id="mvPlayer" src="" frameborder="0" allowfullscreen></iframe>
+</div>
+<script>
+// 30 題問題
+const questions = [
+"1. 你最容易單曲循環哪一種歌？",
+"2. 舞台表演你最在意什麼？",
+"3. 一首歌如果舞台很好看，但音源普通，你會？",
+"4. 你聽歌時最在意的是？",
+"5. 團體每次回歸風格差很大，你的反應是？",
+"6. 你看舞台時第一眼注意的是？",
+"7. 你比較喜歡哪種舞台？",
+"8. 舞蹈強但唱功普通，你能接受嗎？",
+"9. 你更重視？",
+"10. 你最喜歡的團體風格是？",
+"11. 你對世界觀設定的看法？",
+"12. 成員反差感對你來說？",
+"13. 你偏好哪種出道形象？",
+"14. 你在意成員之間的感情嗎？",
+"15. 團體人數多，你會？",
+"16. 你最容易被誰吸引？",
+"17. 成員參與創作對你來說？",
+"18. 你願意追綜藝、直播嗎？",
+"19. 你比較喜歡？",
+"20. 回歸頻率 vs 品質，你選？",
+"21. 你喜歡歌詞有故事性還是重旋律？",
+"22. 喜歡舞台特效多還是簡單利落？",
+"23. 偶像穿搭與風格對你重要嗎？",
+"24. 你喜歡團體成員個性差異大還是類似？",
+"25. 你更容易入坑哪種團？",
+"26. 喜歡多分隊制還是固定分工？",
+"27. 舞台氣氛強烈對你吸引力？",
+"28. 喜歡團體概念前衛還是經典？",
+"29. 你更看重音源榜單還是現場表演？",
+"30. 追團重視團體還是個人魅力？"
+];
+
+// 選項
+const optionsList = [
+["副歌洗腦/旋律簡單","節奏強烈/鼓點重","情緒濃厚/有故事","曲風特別/越聽越上癮"],
+["刀群舞整齊度","個人魅力與氣場","情感表現力","舞台概念與創意"],
+["只看舞台就好","會加入歌單","要看歌","會慢慢不聽"],
+["旋律好記","節奏與能量","歌詞情感","整體氛圍風格"],
+["很新鮮","可以接受","不習慣","喜歡固定風格"],
+["整齊度","氣場","表情情緒","概念視覺"],
+["刀群舞","個人魅力突出","情緒感染力","編排有創意"],
+["完全可以","勉強可以","要看歌","不行"],
+["現場氣氛","音源耐聽","舞台故事性","成員表現力"],
+["清爽/青春","帥酷/Girl crush","情感/抒情","實驗/概念型"],
+["超加分","有就好","不在意","覺得太複雜"],
+["超吸引","有一點就好","普通","沒感覺"],
+["少年/少女成長型","成熟型","可愛清新","前衛特別"],
+["非常在意","有就好","不重要","幾乎不在意"],
+["覺得熱鬧","慢慢記","有點困擾","不喜歡"],
+["主唱","舞擔","Rap擔","全能型"],
+["非常重要","加分","普通","不在意"],
+["一定會","有空才看","偶爾","幾乎不看"],
+["大勢團","潛力股慢慢成長","小眾有特色","都可以"],
+["常回歸","平衡最重要","品質高最重要","不在意"],
+["故事性","旋律","都行","無所謂"],
+["特效多","簡單利落","都可以","不在意"],
+["穿搭重要","稍微重要","不太重要","完全不在意"],
+["差異大","類似","適中","無所謂"],
+["舞台吸引","音源吸引","概念吸引","成員吸引"],
+["多分隊","固定分工","無所謂","看概念"],
+["氣氛強","中等","不在意","弱也可以"],
+["前衛","經典","都喜歡","隨團風格"],
+["音源榜單","現場表演","兩者都重","不在意"],
+["團體","個人魅力","都看","無所謂"]
+];
+
+// 類型對應表（簡化示例，可依需求擴充）
+const typeMapping = {
+"副歌洗腦/旋律簡單":"少年清爽型","節奏強烈/鼓點重":"嘻哈硬派型","情緒濃厚/有故事":"情感律動型",
+"曲風特別/越聽越上癮":"多分隊/實驗型","刀群舞整齊度":"舞台爆發型","個人魅力與氣場":"Girl crush 自信型",
+"情感表現力":"情感律動型","舞台概念與創意":"概念世界觀型","只看舞台就好":"舞台爆發型",
+"會加入歌單":"少年清爽型","要看歌":"概念世界觀型","會慢慢不聽":"清新甜美型",
+"旋律好記":"少年清爽型","節奏與能量":"嘻哈硬派型","歌詞情感":"情感律動型",
+"整體氛圍風格":"概念世界觀型","很新鮮":"多分隊/實驗型","可以接受":"清新甜美型",
+"不習慣":"高級暗黑型","喜歡固定風格":"電音未來型","整齊度":"舞台爆發型","氣場":"Girl crush 自信型",
+"表情情緒":"情感律動型","概念視覺":"概念世界觀型","刀群舞":"舞台爆發型","個人魅力突出":"Girl crush 自信型",
+"情緒感染力":"情感律動型","編排有創意":"多分隊/實驗型","完全可以":"舞台爆發型",
+"勉強可以":"少年清爽型","要看歌":"概念世界觀型","不行":"高級暗黑型","現場氣氛":"舞台爆發型",
+"音源耐聽":"少年清爽型","舞台故事性":"概念世界觀型","成員表現力":"Girl crush 自信型",
+"清爽/青春":"少年清爽型","帥酷/Girl crush":"Girl crush 自信型","情感/抒情":"情感律動型",
+"實驗/概念型":"多分隊/實驗型","超加分":"概念世界觀型","有就好":"少年清爽型",
+"不在意":"清新甜美型","覺得太複雜":"多分隊/實驗型","超吸引":"舞台爆發型",
+"有一點就好":"情感律動型","普通":"少年清爽型","沒感覺":"清新甜美型",
+"少年/少女成長型":"少年清爽型","成熟型":"高級暗黑型","可愛清新":"清新甜美型",
+"前衛特別":"電音未來型","非常在意":"舞台爆發型","加分":"少女清新型",
+"幾乎不在意":"高級暗黑型","覺得熱鬧":"舞台爆發型","慢慢記":"少年清爽型",
+"有點困擾":"清新甜美型","不喜歡":"高級暗黑型","主唱":"少年清爽型",
+"舞擔":"舞台爆發型","Rap擔":"嘻哈硬派型","全能型":"Girl crush 自信型",
+"非常重要":"舞台爆發型","加分":"少年清爽型","普通":"清新甜美型","幾乎不在意":"高級暗黑型",
+"一定會":"舞台爆發型","有空才看":"少年清爽型","偶爾":"情感律動型","幾乎不看":"清新甜美型",
+"大勢團":"舞台爆發型","潛力股慢慢成長":"情感律動型","小眾有特色":"多分隊/實驗型","都可以":"清新甜美型",
+"常回歸":"舞台爆發型","平衡最重要":"少年清爽型","品質高最重要":"高級暗黑型",
+"故事性":"概念世界觀型","旋律":"少年清爽型","都行":"多分隊/實驗型","無所謂":"清新甜美型",
+"特效多":"舞台爆發型","簡單利落":"少年清爽型","穿搭重要":"舞台爆發型","稍微重要":"少年清爽型",
+"差異大":"舞台爆發型","類似":"清新甜美型","舞台吸引":"舞台爆發型",
+"音源吸引":"少年清爽型","概念吸引":"概念世界觀型","成員吸引":"Girl crush 自信型",
+"多分隊":"多分隊/實驗型","固定分工":"少年清爽型","氣氛強":"舞台爆發型",
+"中等":"少年清爽型","前衛":"電音未來型","經典":"高級暗黑型",
+"音源榜單":"少年清爽型","現場表演":"舞台爆發型","兩者都重":"概念世界觀型",
+"團體":"舞台爆發型","個人魅力":"Girl crush 自信型","都看":"多分隊/實驗型"
+};
+
+// 記錄答案
+const answers = {};
+
+// 生成題目
+const quizDiv = document.getElementById('quizContent');
+for(let i=0;i<30;i++){
+  const qDiv = document.createElement('div');
+  qDiv.className='question';
+  qDiv.innerHTML=`<h3>${questions[i]}</h3><div class="options"></div>`;
+  optionsList[i].forEach(opt=>{
+    const btn = document.createElement('button');
+    btn.type='button';
+    btn.textContent=`Q${i+1}: ${opt}`;
+    btn.addEventListener('click',()=>{
+      qDiv.querySelectorAll('button').forEach(b=>b.style.background='#eee');
+      btn.style.background='#4CAF50';
+      answers[i]=opt;
+    });
+    qDiv.querySelector('.options').appendChild(btn);
+  });
+  quizDiv.appendChild(qDiv);
+}
+
+// 團體資料（男女團+2023新人團完整補全，可再自行增補MV連結）
+const groups = [
+{name:"Stray Kids",type:"舞台爆發型",reason:"自產曲強、噪音風、舞台爆發力",mv:"https://www.youtube.com/embed/mG-0xsIMZrE"},
+{name:"ATEEZ",type:"舞台爆發型",reason:"大型舞台、世界觀濃厚",mv:"https://www.youtube.com/embed/2g1MLj0ZXY4"},
+{name:"THE BOYZ",type:"概念世界觀型",reason:"刀群舞、概念美、視覺強",mv:"https://www.youtube.com/embed/qfQX37xXh1M"},
+{name:"TXT",type:"少年清爽型",reason:"少年感、清爽風、概念性敘事",mv:"https://www.youtube.com/embed/5ZAK69uNULk"},
+{name:"TREASURE",type:"嘻哈硬派型",reason:"YG節奏、嘻哈青春感",mv:"https://www.youtube.com/embed/示意TREASURE"},
+{name:"ENHYPEN",type:"概念世界觀型",reason:"吸血鬼世界觀、表演敘事強",mv:"https://www.youtube.com/embed/示意ENHYPEN"},
+{name:"RIIZE",type:"情感律動型",reason:"emotional pop、無刀但律動強",mv:"https://www.youtube.com/embed/示意RIIZE"},
+{name:"ZEROBASEONE",type:"少年清爽型",reason:"期間限定人氣爆發、青春概念",mv:"https://www.youtube.com/embed/示意ZB1"},
+{name:"BOYNEXTDOOR",type:"清新甜美型",reason:"生活系歌詞、無偶像包袱感",mv:"https://www.youtube.com/embed/示意BOYNEXTDOOR"},
+{name:"xikers",type:"舞台爆發型",reason:"瘋狂節奏、強舞台現場",mv:"https://www.youtube.com/embed/示意XIKERS"},
+{name:"TWS",type:"少年清爽型",reason:"校園青春感、旋律清爽",mv:"https://www.youtube.com/embed/示意TWS"},
+{name:"EVNNE",type:"舞台爆發型",reason:"新人黑馬、舞蹈整齊度高",mv:"https://www.youtube.com/embed/示意EVNNE"},
+{name:"&TEAM",type:"概念世界觀型",reason:"HYBE日韓綜合、設定世界觀感",mv:"https://www.youtube.com/embed/示意ANDTEAM"},
+{name:"LE SSERAFIM",type:"Girl crush 自信型",reason:"力量自信Girl crush，舞台氣場超強",mv:"https://www.youtube.com/embed/示意LE_SSERAFIM"},
+{name:"NewJeans",type:"少年清爽型",reason:"清爽極簡流行風，時尚話題持續爆紅",mv:"https://www.youtube.com/embed/示意NEWJEANS"},
+{name:"NMIXX",type:"多分隊/實驗型",reason:"曲風混融實驗性強，越聽越耐玩",mv:"https://www.youtube.com/embed/示意NMIXX"},
+{name:"BABYMONSTER",type:"嘻哈硬派型",reason:"YG系新人怪物，唱Rap實力兼具",mv:"https://www.youtube.com/embed/示意BABYMONSTER"},
+{name:"tripleS",type:"多分隊/實驗型",reason:"多分隊概念新穎、風格新鮮",mv:"https://www.youtube.com/embed/示意TRIPLES"},
+{name:"ILLIT",type:"清新甜美型",reason:"甜感新生代，歌曲朗朗上口",mv:"https://www.youtube.com/embed/示意ILLIT"},
+{name:"UNIS",type:"少年清爽型",reason:"明亮活力，新人場景快速上升",mv:"https://www.youtube.com/embed/示意UNIS"},
+{name:"BLACKPINK",type:"Girl crush 自信型",reason:"Girl crush全球代表，風格鮮明霸氣",mv:"https://www.youtube.com/embed/示意BLACKPINK"},
+{name:"TWICE",type:"清新甜美型",reason:"旋律最洗腦女團之一，國民級傳唱度",mv:"https://www.youtube.com/embed/示意TWICE"},
+{name:"ITZY",type:"Girl crush 自信型",reason:"Girl crush × 自信主題代表",mv:"https://www.youtube.com/embed/示意ITZY"},
+{name:"Red Velvet",type:"高級暗黑型",reason:"概念光譜超廣，甜美到高級暗黑都能駕馭",mv:"https://www.youtube.com/embed/示意REDVELVET"},
+{name:"GFRIEND",type:"舞台爆發型",reason:"刀群舞少女系巔峰，旋律能打到心裡",mv:"https://www.youtube.com/embed/示意GFRIEND"},
+{name:"(G)I-DLE",type:"多分隊/實驗型",reason:"自產曲王者，風格敢玩標新立異",mv:"https://www.youtube.com/embed/示意GIDLE"},
+{name:"STAYC",type:"清新甜美型",reason:"甜酷清新＋音源口碑穩定",mv:"https://www.youtube.com/embed/示意STAYC"},
+{name:"IVE",type:"高級暗黑型",reason:"優雅Diva氣質，旋律強攻榜單",mv:"https://www.youtube.com/embed/示意IVE"},
+{name:"Kep1er",type:"清新甜美型",reason:"舞曲動感活力滿點，節奏抓耳",mv:"https://www.youtube.com/embed/示意KEP1ER"},
+{name:"aespa",type:"電音未來型",reason:"近未來電音風格鮮明，舞台中毒性強",mv:"https://www.youtube.com/embed/示意AESPA"},
+{name:"fromis_9",type:"清新甜美型",reason:"清新柔亮，聽了會心情變好",mv:"https://www.youtube.com/embed/示意FROMIS9"}
+];
+
+// 計算結果
+document.getElementById('submitBtn').addEventListener('click',()=>{
+  const score = {};
+  for(let i in answers){
+    const type = typeMapping[answers[i]];
+    score[type] = (score[type]||0)+1;
+  }
+  // 找出最高分類型
+  let max = 0, resultType="";
+  for(let t in score){
+    if(score[t]>max){ max=score[t]; resultType=t; }
+  }
+  // 從該類型挑團體
+  const candidates = groups.filter(g=>g.type===resultType);
+  const pick = candidates[Math.floor(Math.random()*candidates.length)];
+  document.getElementById('groupName').textContent=pick.name;
+  document.getElementById('groupReason').textContent=pick.reason;
+  document.getElementById('mvPlayer').src=pick.mv;
+  document.getElementById('result').style.display='block';
+  window.scrollTo(0,document.body.scrollHeight);
+});
+</script>
+</body>
+</html>
